@@ -5,6 +5,20 @@ library(shinydashboard)
 library(DT)
 library(tidyverse)
 library(formattable)
+library(plotly)
+
+startUp_csv = read.csv(file = 'data/investments_VC.csv', header = TRUE)
+
+#startUp_csv$status = as.factor(startUp_csv$status)
+startUp_csv = startUp_csv %>% mutate_at(c('status', 'market',
+                                          'country_code', 'state_code', 'region',
+                                          'city', 'funding_rounds', 'founded_year',
+                                          'founded_quarter'), as.factor)
+
+# 13387 missing values
+startUp_csv$funding_total_usd = as.numeric(gsub(",", "", startUp_csv$funding_total_usd))
+
+
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(skin = 'black',
@@ -27,6 +41,11 @@ ui <- dashboardPage(skin = 'black',
                   valueBoxOutput('totalCompaniesBox'),
                   valueBoxOutput('totalCompaniesBox2'),
                   valueBoxOutput('totalCompaniesBox3')
+                ),
+                fluidRow(
+                  uiOutput('miniDatasetBox'),
+                  uiOutput('miniplot1Box'),
+                  uiOutput('miniplot2Box')
                 ),
                 fluidRow(
                   #output goes here
@@ -84,23 +103,8 @@ ui <- dashboardPage(skin = 'black',
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
-  startUp_csv = read.csv(file = 'data/investments_VC.csv', header = TRUE)
 
-  #startUp_csv$status = as.factor(startUp_csv$status)
-  startUp_csv = startUp_csv %>% mutate_at(c('status', 'market',
-                                            'country_code', 'state_code', 'region',
-                                            'city', 'funding_rounds', 'founded_year',
-                                            'founded_quarter'), as.factor)
 
-  # 13387 missing values
-  startUp_csv$funding_total_usd = as.numeric(gsub(",", "", startUp_csv$funding_total_usd))
-  #sum(is.na(startUp_csv$funding_total_usd))
-
-  #data cleaning
-  ## 1. Split categories, they have | as divider, make them factor type
-  ## 2. funding_total_usd is of character type -> change to double or int
-  ## 3. Make these factor type: categories, market,
-  ##    country code, state code, region, city,
 
   # tasks
   ## as in my other dashboard lets split the big dataset into smaller tables and create reactive plots
@@ -154,20 +158,6 @@ server <- function(input, output) {
         DTOutput('table1'))
   })
 
-  # rendering the big dataset with DT
-  # output$mainData = renderDT(
-  #   datatable(startUp_csv,
-  #             filter = 'top',
-  #             options = list(scrollX = TRUE)
-  #             )
-  #
-  #   )
-
-  #showing it inside the box
-  # output$mainDataBox = renderUI({
-  #   box(title = 'Crunchbase StartUp Funding Data', width = 12,
-  #       DTOutput('mainData'))
-  # })
 
   # some info boxes on this row with general info
 
@@ -195,11 +185,119 @@ server <- function(input, output) {
     countClosed = nrow(startUp_csv)
     result = formattable((countOpenCompanies/countClosed * 100), digits = 2, format = 'f')
     valueBox(
-      paste0(result, " %"), "% of operating companies", icon = icon("thumb-up", lib = 'glyphicon'),
+      paste0(result, " %"), "% of operating companies", icon = icon("thumbs-up", lib = 'glyphicon'),
       color = "yellow"
     )
   }
   )
+
+  # output$capitalRaisedPlot <- renderPlotly({
+  #   p <- plot_ly()
+  #
+  #   s <- input$table1_rows_selected
+  #   if (length(s)) {
+  #     p <- p %>%
+  #       add_trace(data = startUp_csv[s, , drop = FALSE],
+  #                 x = ~PLZ, y = ~medianPrice, mode = "markers",
+  #                 marker = list(opacity = 1, color = "red")) %>%
+  #       layout(showlegend = FALSE)
+  #   }
+  #   p
+  # })
+  #
+  # output$capitalRaisedPlotBox = renderUI({
+  #   box(title = 'Some plot', width = 4,
+  #       plotlyOutput('capitalRaisedPlot'))
+  # })
+  miniDT = select(startUp_csv,country_code, city, funding_total_usd, status) %>%
+    group_by(country_code) %>%
+    summarise(newcol = n(), .groups = 'drop')
+
+  output$miniDataset = renderDataTable(
+   miniDT
+  )
+
+
+  output$miniDatasetBox = renderUI({
+    box(title = 'Mini Dataset', width = 4,
+        DTOutput('miniDataset'))
+  })
+
+  miniDTAdvanced = select(startUp_csv,country_code, city, funding_total_usd, status) %>%
+    group_by(country_code, status) %>%
+    summarise(count = n(), .groups = 'drop')
+
+  miniDT$country_code = as.character(miniDT$country_code)
+
+
+  countryCode = c()
+  output$miniplot1 = renderPlotly({
+
+
+
+    p = plot_ly()
+
+    s = input$miniDataset_rows_selected
+
+    #loop through districtPrice_tbl with s as index to get all PLZ that are selected
+
+    collectCodes = function(code) {
+      countryCode <<- c(countryCode, code)
+
+     }
+
+    sapply(s, function(x) collectCodes(miniDT[s,]$country_code))
+
+
+    if (length(s)) {
+      #browser(countryCode)
+     # p = plot_ly()
+      p <- p %>%
+        add_bars(data = filter(miniDTAdvanced, country_code %in% countryCode),
+                  x = ~status, y = ~count, color = ~country_code, type = 'bar')
+    }
+    p
+  })
+
+  output$miniplot1Box = renderUI({
+    box(title = 'Mini PLot 1', width = 4,
+        plotlyOutput('miniplot1'))
+  })
+
+  miniDTCapital = select(startUp_csv,country_code, city, funding_total_usd) %>%
+    group_by(country_code) %>%
+    summarise(total_capital = sum(funding_total_usd, na.rm = TRUE))
+
+  output$miniplot2 = renderPlotly({
+
+    p = plot_ly()
+
+    s = input$miniDataset_rows_selected
+
+    #loop through districtPrice_tbl with s as index to get all PLZ that are selected
+    # countryCode = c()
+    # collectCodes = function(code) {
+    #   countryCode <<- c(countryCode, code)
+    #
+    # }
+    #
+    # sapply(s, function(x) collectCodes(miniDT[s,]$country_code))
+    #
+    #
+    if (length(s)) {
+      #browser(countryCode)
+      #p = plot_ly()
+      p <- p %>%
+        add_bars(data = filter(miniDTCapital, country_code %in% countryCode),
+                 x = ~country_code, y = ~total_capital, type = 'bar')
+    }
+    p
+  })
+
+  output$miniplot2Box = renderUI({
+    box(title = 'Mini PLot 2', width = 4,
+        plotlyOutput('miniplot2'))
+  })
 
 }
 
