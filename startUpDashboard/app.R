@@ -6,6 +6,9 @@ library(DT)
 library(tidyverse)
 library(formattable)
 library(plotly)
+library(leaflet)
+library(ggplot2)
+library(htmlwidgets)
 
 startUp_csv = read.csv(file = 'data/investments_VC.csv', header = TRUE)
 
@@ -86,8 +89,8 @@ ui <- dashboardPage(skin = 'black',
                 ),
 
                 fluidRow(
-                  #plotting here
-
+                  #put plots here
+                uiOutput('bigmapBox')
                 )
                 ),
         tabItem(tabName = 'page2',
@@ -219,7 +222,7 @@ server <- function(input, output) {
 
 
   output$miniDatasetBox = renderUI({
-    box(title = 'Mini Dataset', width = 4,
+    box(title = 'StartUps per Country', width = 4,
         DTOutput('miniDataset'))
   })
 
@@ -260,7 +263,7 @@ server <- function(input, output) {
   })
 
   output$miniplot1Box = renderUI({
-    box(title = 'Mini PLot 1', width = 4,
+    box(title = 'Company status per Country', width = 4,
         plotlyOutput('miniplot1'))
   })
 
@@ -295,10 +298,171 @@ server <- function(input, output) {
   })
 
   output$miniplot2Box = renderUI({
-    box(title = 'Mini PLot 2', width = 4,
+    box(title = 'Raised Capital per Country', width = 4,
         plotlyOutput('miniplot2'))
   })
 
+  map_df  = select(startUp_csv, city, funding_total_usd) %>%
+    group_by(city) %>%
+    summarise(total_capital = sum(funding_total_usd, na.rm = TRUE)) %>%
+    arrange(desc(total_capital)) %>%
+    top_n(20)
+  map_df$city = as.character(map_df$city)
+
+  # render function depends on the package you use for plotting
+  output$bigmap = renderLeaflet({
+    #plot here
+
+    m<- leaflet() %>% setView(lng=16.363449,lat=48.210033, zoom = 1)
+    m<- addTiles(m)
+    m<- addMarkers(m, lng=-73.935242,lat=40.730610,
+
+                   label = "New York #1",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-122.431297,lat=37.773972,
+
+                   label = "San Francisco #2",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=116.383331,lat=39.916668,
+
+                   label = "Beijing #3",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-122.143936,lat=37.468319,
+
+                   label = "Palo Alto #4",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=0.119167,lat=52.205276,
+
+                   label = "Cambridge #5",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-117.161087,lat=32.715736,
+
+                   label = "San Diego #6",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-0.118092,lat=51.509865,
+
+                   label = "London #7",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-122.083855,lat=37.386051,
+
+                   label = "Mountain View #8",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=37.618423,lat=55.751244,
+
+                   label = "Moscow #9",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-121.893028,lat=37.335480,
+
+                   label = "San Jose #10",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-122.036346,lat=37.368832,
+
+                   label = "Sunnyvale #11",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-122.236115,lat=37.487846,
+
+                   label = "Redwood City #12",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-71.057083,lat=42.361145,
+
+                   label = "Boston #13",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-97.733330,lat=30.266666,
+
+                   label = "Austin #14",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-84.386330,lat=33.753746,
+
+                   label = "Atlanta #15",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-121.955238,lat=37.354107,
+
+                   label = "Santa Clara #16",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=121.469170,lat=31.224361,
+
+                   label = "Shanghai #17",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-122.313057,lat=37.554169,
+
+                   label = "San Mateo #18",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+    m<- addMarkers(m, lng=-87.623177,lat=41.881832,
+
+                   label = "Chicago #19",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+
+    m<- addMarkers(m, lng=-73.866669,lat=45.450001,
+
+                   label = "Kirkland #20",
+                   labelOptions = labelOptions(noHide = F, direction = "bottom",
+                                               style = list(
+                                                 "color" = "blue",
+                                                 "font-size" = "17px")))
+
+  })
+
+  output$bigmapBox = renderUI({
+    box(title = 'Top 20 cities ranked by capital funding', width = 12,
+        leafletOutput('bigmap'))
+  })
 }
 
 # Run the application
